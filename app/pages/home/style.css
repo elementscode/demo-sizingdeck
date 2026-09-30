@@ -1,0 +1,80 @@
+@import "#app/shared/styles/page.css";
+
+.home-intro {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.home-intro h1 {
+  margin: 0;
+  font-size: var(--text-4xl);
+  letter-spacing: var(--tracking-tight);
+}
+
+.home-fan {
+  position: relative;
+  flex: none;
+  width: 11rem;
+  height: 7rem;
+}
+
+.home-fan span {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 3.6rem;
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 5.25rem;
+  border: 1px solid var(--accent-edge);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--accent-deep);
+  transform-origin: 50% 110%;
+}
+
+.home-fan span:nth-child(1) {
+  transform: translateX(-2rem) rotate(-14deg);
+}
+
+.home-fan span:nth-child(2) {
+  z-index: 1;
+}
+
+.home-fan span:nth-child(3) {
+  z-index: 2;
+  transform: translateX(2rem) rotate(14deg);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.home-rooms a {
+  font-weight: var(--weight-medium);
+}
+
+.home-room {
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.home-room:last-child {
+  border-bottom: 0;
+}
+
+.home-room-meta {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+@media (max-width: 45rem) {
+  .home-fan {
+    display: none;
+  }
+}
