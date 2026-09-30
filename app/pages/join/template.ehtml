@@ -1,0 +1,89 @@
+import "./style.css";
+import { FieldErrors, redirect, session, sql, tx, ValidationError } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { Layout } from "#app/shared/templates/layout";
+import { findRoomByCode } from "#app/shared/services/poker";
+
+interface JoinForm {
+  name: string;
+}
+
+/** @rpc */
+export function joinRoom(code: string, form: JoinForm) {
+  let name = form.name.trim();
+  if (name.length === 0) {
+    throw new ValidationError<JoinForm>({ name: ["Tell the room who you are."] });
+  }
+
+  let room = findRoomByCode(code);
+
+  tx(() => {
+    let userId = session.get("userId");
+
+    // A session can outlive its user row; start a fresh identity rather than fail.
+    if (userId && sql(`select 1 from users where id = ${userId}`).empty()) {
+      userId = undefined;
+    }
+
+    if (!userId) {
+      userId = sql<{ id: string }>(`insert into users (name) values (${name}) returning id`).firstOrThrow().id;
+      session.login({ userId, userName: name });
+    }
+
+    sql(`
+      insert into participants (roomId, userId, name)
+           values (${room.id}, ${userId}, ${name})
+      on conflict (roomId, userId) do nothing
+    `);
+  });
+}
+
+function onJoin(code: string, form: JoinForm): FieldErrors<JoinForm> {
+  try {
+    joinRoom(code, form);
+    redirect(`/r/${code}`);
+    return {};
+  } catch (err: any) {
+    if (err instanceof ValidationError) {
+      return (err.errors ?? {}) as FieldErrors<JoinForm>;
+    }
+
+    throw err;
+  }
+}
+
+<html lang="en" class="page-join" (
+  room: { code: string; name: string },
+  people: string[],
+  private form: JoinForm = { name: session.get("userName") ?? "" },
+  private errors: FieldErrors<JoinForm> = {},
+)>
+  <head>
+    <title>Join {room.name} · sizingdeck</title>
+    <meta name="description" content={`Join ${room.name} to estimate the sprint.`}>
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <Layout>
+      <div class="card join-card">
+        <form class="card-body stack is-lg" onsubmit={() => errors = onJoin(room.code, form)}>
+          <div class="stack is-sm">
+            <p class="eyebrow">You're invited to estimate</p>
+            <h1>{room.name}</h1>
+            <p class="join-meta" e:if={people.length > 0}>
+              {people.length === 1 ? people[0] + " is" : `${people.slice(0, 3).join(", ")}${people.length > 3 ? ` and ${people.length - 3} more` : ""} are`} at the table.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="join-name">Your name</label>
+            <input id="join-name" class={errors.name?.length ? "is-error" : undefined} value={form.name} placeholder="Sam" focus={true}>
+            <p class="hint is-error" e:for={msg of errors.name ?? []}>{msg}</p>
+          </div>
+
+          <button type="submit" class="is-primary is-block">Join the room</button>
+        </form>
+      </div>
+    </Layout>
+  </body>
+</html>

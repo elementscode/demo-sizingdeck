@@ -1,0 +1,551 @@
+import "./style.css";
+import { LiveView } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { Layout } from "#app/shared/templates/layout";
+import { Participant, Room, Story, Vote } from "#app/shared/services/poker";
+import { cardLabel, DECK, POINTS, spreadLabel, summarize, Summary } from "#app/shared/deck";
+import {
+  addStory,
+  castVote,
+  claimFacilitator,
+  removeStory,
+  reveal,
+  revote,
+  saveEstimate,
+  startStory,
+  StoryErrors,
+  StoryForm,
+} from "./services";
+
+interface Mine {
+  storyId: string;
+  round: number;
+  card: string;
+}
+
+interface Notice {
+  text: string;
+}
+
+function currentOf(room: Room | undefined, stories: LiveView<Story>): Story | undefined {
+  if (!room?.currentStoryId) {
+    return undefined;
+  }
+
+  return stories.get(room.currentStoryId);
+}
+
+function roundVotes(votes: LiveView<Vote>, story: Story | undefined): Vote[] {
+  if (!story) {
+    return [];
+  }
+
+  return votes.filter((v) => v.storyId === story.id && v.round === story.round);
+}
+
+function byJoined(people: LiveView<Participant>): Participant[] {
+  return people.sort((a, b) => +a.createdAt - +b.createdAt || a.id.localeCompare(b.id));
+}
+
+function nameOf(people: LiveView<Participant>, userId: string | undefined): string {
+  return people.find((p) => p.userId === userId)?.name ?? "the facilitator";
+}
+
+function myCard(mine: Mine, story: Story | undefined): string {
+  if (!story || mine.storyId !== story.id || mine.round !== story.round) {
+    return "";
+  }
+
+  return mine.card;
+}
+
+function linkLabel(url: string): string {
+  try {
+    let u = new URL(url);
+    return (u.host + u.pathname).replace(/\/$/, "");
+  } catch {
+    return url;
+  }
+}
+
+function fail(notice: Notice, err: any) {
+  notice.text = err?.message ?? "Something went wrong. Try again.";
+}
+
+function onPick(roomId: string, story: Story, card: string, mine: Mine, notice: Notice) {
+  if (story.status !== "voting") {
+    return;
+  }
+
+  let before = { ...mine };
+  let next = myCard(mine, story) === card ? null : card;
+
+  mine.storyId = story.id;
+  mine.round = story.round;
+  mine.card = next ?? "";
+  notice.text = "";
+
+  try {
+    castVote(roomId, story.id, next);
+  } catch (err: any) {
+    Object.assign(mine, before);
+    fail(notice, err);
+  }
+}
+
+function onReveal(roomId: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    reveal(roomId);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onRevote(roomId: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    revote(roomId);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onSave(roomId: string, estimate: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    saveEstimate(roomId, estimate);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onStart(roomId: string, storyId: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    startStory(roomId, storyId);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onRemove(roomId: string, storyId: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    removeStory(roomId, storyId);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onClaim(roomId: string, notice: Notice) {
+  notice.text = "";
+
+  try {
+    claimFacilitator(roomId);
+  } catch (err: any) {
+    fail(notice, err);
+  }
+}
+
+function onAddStory(roomId: string, form: StoryForm, notice: Notice): StoryErrors {
+  notice.text = "";
+
+  try {
+    addStory(roomId, form);
+    form.title = "";
+    form.url = "";
+    return {};
+  } catch (err: any) {
+    if (err?.errors) {
+      return err.errors as StoryErrors;
+    }
+
+    fail(notice, err);
+    return {};
+  }
+}
+
+async function onCopy(url: string, state: { copied: boolean }) {
+  await navigator.clipboard.writeText(url);
+  state.copied = true;
+  setTimeout(() => state.copied = false, 1800);
+}
+
+<html lang="en" class="page-room" (
+  roomRows: LiveView<Room>,
+  people: LiveView<Participant>,
+  stories: LiveView<Story>,
+  votes: LiveView<Vote>,
+  me: string,
+  mine: Mine,
+  shareUrl: string,
+  private notice: Notice = { text: "" },
+)>
+  <head>
+    <title>{roomRows.at(0)?.name ?? "Room"} · sizingdeck</title>
+    <meta name="description" content="A planning poker room on sizingdeck.">
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <Layout wide={true}>
+      <div class="stack is-xl">
+        <RoomHead room={roomRows.at(0)!} {people} {me} {shareUrl} {notice} />
+
+        <div class="callout is-danger room-notice row" e:if={notice.text} role="alert">
+          <span>{notice.text}</span>
+          <button class="is-ghost is-sm" onclick={() => notice.text = ""}>Dismiss</button>
+        </div>
+
+        <div class="room-grid">
+          <div class="stack is-lg">
+            <Stage
+              room={roomRows.at(0)!}
+              story={currentOf(roomRows.at(0), stories)}
+              {stories}
+              {people}
+              cast={roundVotes(votes, currentOf(roomRows.at(0), stories))}
+              {me}
+              {mine}
+              {notice}
+            />
+          </div>
+
+          <div class="stack is-lg">
+            <Queue
+              room={roomRows.at(0)!}
+              pending={stories.filter((s) => s.status === "pending").sort((a, b) => +a.createdAt - +b.createdAt)}
+              {me}
+              {notice}
+            />
+            <Estimated
+              room={roomRows.at(0)!}
+              done={stories.filter((s) => s.status === "estimated").sort((a, b) => +(b.estimatedAt ?? 0) - +(a.estimatedAt ?? 0))}
+            />
+          </div>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>
+
+<RoomHead (
+  room: Room,
+  people: LiveView<Participant>,
+  me: string,
+  shareUrl: string,
+  notice: Notice,
+  private share: { copied: boolean } = { copied: false },
+)>
+  <div class="room-head stack">
+    <h1>{room.name}</h1>
+    <div class="room-meta cluster">
+      <div class="room-share row">
+        <input readonly value={shareUrl} aria-label="Room link" onfocus={(e: FocusEvent) => (e.target as HTMLInputElement).select()}>
+        <button class="is-sm" onclick={() => onCopy(shareUrl, share)}>{share.copied ? "Copied" : "Copy link"}</button>
+      </div>
+      <span e:if={room.facilitatorId === me} class="pill is-accent">You're facilitating</span>
+      <span e:else class="cluster is-sm">
+        <span>Facilitator: <strong>{nameOf(people, room.facilitatorId)}</strong></span>
+        <button class="is-ghost is-sm" onclick={() => onClaim(room.id, notice)}>Take over</button>
+      </span>
+      <span>{people.length} at the table</span>
+    </div>
+  </div>
+</RoomHead>
+
+<Stage (
+  room: Room,
+  story: Story | undefined,
+  stories: LiveView<Story>,
+  people: LiveView<Participant>,
+  cast: Vote[],
+  me: string,
+  mine: Mine,
+  notice: Notice,
+  private facilitating: boolean = room.facilitatorId === me,
+)>
+  <div class="card">
+    <div class="card-body stack is-lg" e:if={story}>
+      <div class="stage-title row">
+        <div class="stack is-xs">
+          <p class="eyebrow">{story!.status === "revealed" ? "Cards are up" : "Now estimating"}</p>
+          <h2>{story!.title}</h2>
+          <a e:if={story!.url} class="stage-link" href={story!.url} target="_blank" rel="noopener">{linkLabel(story!.url)}</a>
+        </div>
+        <div class="stage-actions row" e:if={facilitating}>
+          <button class="is-ghost" e:if={cast.length > 0 || story!.status === "revealed"} onclick={() => onRevote(room.id, notice)}>
+            {story!.status === "revealed" ? "Vote again" : "Clear cards"}
+          </button>
+          <button class="is-primary" e:if={story!.status === "voting"} disabled={cast.length === 0} onclick={() => onReveal(room.id, notice)}>
+            Reveal cards
+          </button>
+        </div>
+      </div>
+
+      <TableSeats {story} {people} {cast} {room} {me} />
+
+      <Results e:if={story!.status === "revealed"} {room} story={story!} {cast} {facilitating} {people} {notice} />
+    </div>
+
+    <div class="card-body stage-empty" e:elseif={stories.some((s) => s.status === "pending")}>
+      <strong>Pick the next story</strong>
+      <span e:if={facilitating}>Choose one from Up next to start the vote.</span>
+      <span e:else>Waiting for {nameOf(people, room.facilitatorId)} to pick the next story.</span>
+    </div>
+
+    <div class="card-body stage-empty" e:elseif={stories.length > 0}>
+      <strong>Everything's sized</strong>
+      <span>{stories.length} {stories.length === 1 ? "story" : "stories"} estimated. Add more to keep going, or export the list.</span>
+    </div>
+
+    <div class="card-body stage-empty" e:else>
+      <strong>No stories yet</strong>
+      <span e:if={facilitating}>Add the first story on the right and voting starts right away.</span>
+      <span e:else>Waiting for {nameOf(people, room.facilitatorId)} to add a story.</span>
+    </div>
+  </div>
+
+  <Hand e:if={story} room={room} story={story!} {mine} {notice} />
+</Stage>
+
+<TableSeats (
+  story: Story | undefined,
+  people: LiveView<Participant>,
+  cast: Vote[],
+  room: Room,
+  me: string,
+)>
+  <div class="table">
+    <ul class="seats">
+      <li class="seat" e:for={[i, p] of byJoined(people).entries()} e:key={([i, p]) => p.id}>
+        <Seat person={p} vote={cast.find((v) => v.userId === p.userId)} index={i} {room} {me} {cast} />
+      </li>
+    </ul>
+
+    <div class="table-status row" e:if={story?.status === "voting"}>
+      <progress max={people.length} value={cast.length}></progress>
+      <span>{cast.length} of {people.length} voted</span>
+    </div>
+  </div>
+</TableSeats>
+
+<Seat (
+  person: Participant,
+  vote: Vote | undefined,
+  index: number,
+  room: Room,
+  me: string,
+  cast: Vote[],
+)>
+  <div
+    class={[
+      "pcard",
+      vote && "has-vote",
+      vote?.revealed && "is-revealed",
+      vote?.revealed && isOutlier(vote, cast) && "is-outlier",
+    ]}
+    style={{ "--i": String(index) }}
+    aria-label={vote ? (vote.revealed ? `${person.name} played ${cardLabel(vote.card ?? "")}` : `${person.name} has voted`) : `${person.name} has not voted`}
+  >
+    <div class="pcard-inner">
+      <div class="pcard-slot">…</div>
+      <div class="pcard-back"></div>
+      <div class="pcard-face">{vote?.card ? cardLabel(vote.card) : ""}</div>
+    </div>
+  </div>
+  <span class="seat-name">{person.name}</span>
+  <span class="seat-role" e:if={person.userId === room.facilitatorId}>facilitator{person.userId === me ? " · you" : ""}</span>
+  <span class="seat-role" e:elseif={person.userId === me}>you</span>
+</Seat>
+
+<Results (
+  room: Room,
+  story: Story,
+  cast: Vote[],
+  facilitating: boolean,
+  people: LiveView<Participant>,
+  notice: Notice,
+  private summary: Summary = summarize(cast.map((v) => v.card ?? "")),
+  private pick: { key: string; value: string } = { key: "", value: "" },
+)>
+  <div class="stack is-lg">
+    <div class="results">
+      <div class="results-average">
+        <div class="results-number">{summary.average ?? "–"}</div>
+        <div class="results-label">Average</div>
+      </div>
+
+      <div class="stack is-sm">
+        <div class="cluster is-sm">
+          <span class={["pill", summary.consensus ? "is-success" : summary.steps >= 3 ? "is-warning" : "is-info"]}>
+            <span class="pill-dot"></span>
+            {summary.numericCount > 0 ? spreadLabel(summary) : "No point cards"}
+          </span>
+          <span class="hand-hint" e:if={summary.numericCount > 0 && !summary.consensus}>
+            Spread {summary.low} to {summary.high}, {summary.steps} {summary.steps === 1 ? "step" : "steps"} apart
+          </span>
+        </div>
+
+        <p class="results-talk" e:if={summary.steps >= 2}>
+          <strong>{playersOf(cast, people, summary.low!)}</strong> played {summary.low} and <strong>{playersOf(cast, people, summary.high!)}</strong> played {summary.high}. Hear them out before settling.
+        </p>
+
+        <div class="bars">
+          <div class="bar" e:for={c of summary.counts} e:key={(c) => c.card}>
+            <span class="bar-card">{cardLabel(c.card)}</span>
+            <span class="bar-track"><span class="bar-fill" style={{ width: `${(c.count / Math.max(...summary.counts.map((x) => x.count))) * 100}%` }}></span></span>
+            <span class="bar-count">{c.count}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settle stack" e:if={facilitating}>
+      <label>Final estimate</label>
+      <div class="settle-picks cluster">
+        <button
+          e:for={p of POINTS}
+          e:key={(p) => p}
+          class={["is-sm", chosen(pick, story, summary) === p && "is-primary"]}
+          aria-pressed={chosen(pick, story, summary) === p ? "true" : "false"}
+          onclick={() => pick = { key: pickKey(story), value: p }}
+        >{p}</button>
+      </div>
+      <div class="row">
+        <button class="is-primary" disabled={chosen(pick, story, summary) === ""} onclick={() => onSave(room.id, chosen(pick, story, summary), notice)}>
+          Save {chosen(pick, story, summary) ? `${chosen(pick, story, summary)} points` : "estimate"}
+        </button>
+      </div>
+    </div>
+
+    <p class="hand-hint" e:else>
+      {nameOf(people, room.facilitatorId)} will settle the final estimate{summary.suggestion ? `; the cards point to ${summary.suggestion}` : ""}.
+    </p>
+  </div>
+</Results>
+
+<Hand (
+  room: Room,
+  story: Story,
+  mine: Mine,
+  notice: Notice,
+)>
+  <div class="card">
+    <div class="card-body stack">
+      <div class="hand" role="group" aria-label="Your cards">
+        <button
+          e:for={card of DECK}
+          e:key={(card) => card}
+          class={["hand-card", myCard(mine, story) === card && "is-active"]}
+          aria-pressed={myCard(mine, story) === card ? "true" : "false"}
+          aria-label={card === "coffee" ? "Coffee break" : card === "?" ? "Not sure" : `${card} points`}
+          disabled={story.status !== "voting"}
+          onclick={() => onPick(room.id, story, card, mine, notice)}
+        >{cardLabel(card)}</button>
+      </div>
+      <p class="hand-hint" e:if={story.status !== "voting"}>Cards are up. Wait for the final estimate or a new round.</p>
+      <p class="hand-hint" e:elseif={myCard(mine, story)}>Your card is down. Nobody sees it until the reveal; pick again to change it.</p>
+      <p class="hand-hint" e:else>Pick a card. It stays face down until the facilitator reveals.</p>
+    </div>
+  </div>
+</Hand>
+
+<Queue (
+  room: Room,
+  pending: Story[],
+  me: string,
+  notice: Notice,
+  private facilitating: boolean = room.facilitatorId === me,
+  private form: StoryForm = { title: "", url: "" },
+  private errors: StoryErrors = {},
+)>
+  <div class="card">
+    <div class="card-head"><h2>Up next</h2></div>
+    <div class="card-body stack">
+      <ul class="side-list" e:if={pending.length > 0}>
+        <li class="queue-item row" e:for={s of pending}>
+          <div class="item-text stack">
+            <span class="item-title">{s.title}</span>
+            <a e:if={s.url} class="item-sub" href={s.url} target="_blank" rel="noopener">{linkLabel(s.url)}</a>
+          </div>
+          <div class="item-actions row" e:if={facilitating}>
+            <button class="is-sm" onclick={() => onStart(room.id, s.id, notice)}>Estimate</button>
+            <button class="is-ghost is-sm" aria-label={`Remove ${s.title}`} onclick={() => onRemove(room.id, s.id, notice)}>✕</button>
+          </div>
+        </li>
+      </ul>
+      <p class="side-empty" e:else>{facilitating ? "Nothing queued. Add a story below." : "Nothing queued yet."}</p>
+
+      <form class="stack is-sm" e:if={facilitating} onsubmit={() => errors = onAddStory(room.id, form, notice)}>
+        <div class="field">
+          <label for="story-title">Story</label>
+          <input id="story-title" class={errors.title?.length ? "is-error" : undefined} value={form.title} placeholder="Export invoices as PDF">
+          <p class="hint is-error" e:for={msg of errors.title ?? []}>{msg}</p>
+        </div>
+        <div class="field">
+          <label for="story-url">Link</label>
+          <input id="story-url" class={errors.url?.length ? "is-error" : undefined} value={form.url} placeholder="https://tracker.example.com/PAY-204">
+          <p class="hint is-error" e:for={msg of errors.url ?? []}>{msg}</p>
+        </div>
+        <button type="submit" class="is-block">Add story</button>
+      </form>
+      <p class="side-empty" e:else>The facilitator adds the stories.</p>
+    </div>
+  </div>
+</Queue>
+
+<Estimated (room: Room, done: Story[])>
+  <div class="card">
+    <div class="card-head"><h2>Estimated</h2></div>
+    <div class="card-body stack">
+      <ul class="side-list" e:if={done.length > 0}>
+        <li class="done-item row" e:for={s of done}>
+          <span class="done-chip">{s.estimate}</span>
+          <div class="item-text stack">
+            <a e:if={s.url} class="item-title" href={s.url} target="_blank" rel="noopener">{s.title}</a>
+            <span e:else class="item-title">{s.title}</span>
+            <span class="item-sub">avg {s.average ?? "–"} · {s.voteCount} {s.voteCount === 1 ? "vote" : "votes"}</span>
+          </div>
+        </li>
+      </ul>
+      <p class="side-empty" e:else>Settled stories collect here.</p>
+
+      <div class="done-total row" e:if={done.length > 0}>
+        <span><strong>{done.reduce((sum, s) => sum + Number(s.estimate ?? 0), 0)}</strong> points across {done.length} {done.length === 1 ? "story" : "stories"}</span>
+        <a class="button is-sm" href={`/r/${room.code}/estimates.csv`} download>Export CSV</a>
+      </div>
+    </div>
+  </div>
+</Estimated>
+
+function isOutlier(vote: Vote, cast: Vote[]): boolean {
+  let s = summarize(cast.map((v) => v.card ?? ""));
+  if (s.steps < 2 || !vote.card || !POINTS.includes(vote.card)) {
+    return false;
+  }
+
+  return vote.card === s.low || vote.card === s.high;
+}
+
+function playersOf(cast: Vote[], people: LiveView<Participant>, card: string): string {
+  let names = cast.filter((v) => v.card === card).map((v) => nameOf(people, v.userId).split(" ")[0]);
+  if (names.length <= 2) {
+    return names.join(" and ");
+  }
+
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+function pickKey(story: Story): string {
+  return `${story.id}:${story.round}`;
+}
+
+function chosen(pick: { key: string; value: string }, story: Story, summary: Summary): string {
+  return pick.key === pickKey(story) ? pick.value : summary.suggestion ?? "";
+}

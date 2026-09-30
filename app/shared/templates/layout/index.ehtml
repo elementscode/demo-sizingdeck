@@ -1,0 +1,23 @@
+import "./style.css";
+import { session } from "@elements/app";
+
+<Layout (wide: boolean = false)>
+  <div class="app">
+    <header class="topbar">
+      <div class={["page-shell", "topbar-inner", "row", !wide && "is-form"]}>
+        <a class="brand row" href="/">
+          <svg class="brand-mark" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="5" width="11" height="15" rx="2" fill="currentColor" opacity="0.35" transform="rotate(-12 8 12.5)"/>
+            <rect x="9.5" y="3.5" width="11" height="15" rx="2" fill="currentColor"/>
+          </svg>
+          sizingdeck
+        </a>
+        <span class="topbar-user" e:if={session.isLoggedIn()}>{session.get("userName")}</span>
+      </div>
+    </header>
+
+    <main class={["page-shell", "app-content", !wide && "is-form"]}>
+      <slot/>
+    </main>
+  </div>
+</Layout>

@@ -1,0 +1,152 @@
+import "./style.css";
+import { FieldErrors, redirect, session, sql, tx, ValidationError } from "@elements/app";
+import favicon from "#app/shared/assets/favicons/favicon.svg";
+import { Layout } from "#app/shared/templates/layout";
+
+export interface RoomLink {
+  id: string;
+  code: string;
+  name: string;
+  people: number;
+  facilitating: boolean;
+}
+
+interface NewRoom {
+  roomName: string;
+  yourName: string;
+}
+
+/** @rpc */
+export function createRoom(form: NewRoom): string {
+  let roomName = form.roomName.trim();
+  let yourName = form.yourName.trim();
+
+  let errors: FieldErrors<NewRoom> = {};
+  if (roomName.length === 0) {
+    errors.roomName = ["Give the room a name."];
+  }
+
+  if (yourName.length === 0) {
+    errors.yourName = ["Tell the room who you are."];
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError(errors);
+  }
+
+  return tx(() => {
+    let userId = session.get("userId");
+
+    // A session can outlive its user row; start a fresh identity rather than fail.
+    if (userId && sql(`select 1 from users where id = ${userId}`).empty()) {
+      userId = undefined;
+    }
+
+    if (!userId) {
+      userId = sql<{ id: string }>(`insert into users (name) values (${yourName}) returning id`).firstOrThrow().id;
+      session.login({ userId, userName: yourName });
+    }
+
+    let room = sql<{ id: string; code: string }>(`
+      insert into rooms (name, facilitatorId)
+           values (${roomName}, ${userId})
+        returning id, code
+    `).firstOrThrow();
+
+    sql(`insert into participants (roomId, userId, name) values (${room.id}, ${userId}, ${yourName})`);
+
+    return room.code;
+  });
+}
+
+function onCreate(form: NewRoom): FieldErrors<NewRoom> {
+  try {
+    let code = createRoom(form);
+    redirect(`/r/${code}`);
+    return {};
+  } catch (err: any) {
+    if (err instanceof ValidationError) {
+      return (err.errors ?? {}) as FieldErrors<NewRoom>;
+    }
+
+    throw err;
+  }
+}
+
+<html lang="en" class="page-home" (
+  myRooms: RoomLink[],
+  demo: RoomLink | null,
+  private form: NewRoom = { roomName: "", yourName: session.get("userName") ?? "" },
+  private errors: FieldErrors<NewRoom> = {},
+)>
+  <head>
+    <title>sizingdeck · planning poker</title>
+    <meta name="description" content="Planning poker for sprint estimation. Create a room, share the link, estimate together.">
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  </head>
+  <body>
+    <Layout>
+      <div class="stack is-xl">
+        <div class="home-intro row">
+          <div class="stack is-sm">
+            <h1>Estimate together</h1>
+            <p class="lede">Open a room, share the link, and size the sprint in one sitting. Everyone picks a card face down; the facilitator flips them all at once.</p>
+          </div>
+          <div class="home-fan" aria-hidden="true">
+            <span>3</span>
+            <span>5</span>
+            <span>8</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>New room</h2></div>
+          <form class="card-body is-grid" onsubmit={() => errors = onCreate(form)}>
+            <div class="field">
+              <label for="room-name">Room name</label>
+              <input id="room-name" class={errors.roomName?.length ? "is-error" : undefined} value={form.roomName} placeholder="Payments · Sprint 18">
+              <p class="hint is-error" e:for={msg of errors.roomName ?? []}>{msg}</p>
+            </div>
+
+            <div class="field">
+              <label for="your-name">Your name</label>
+              <input id="your-name" class={errors.yourName?.length ? "is-error" : undefined} value={form.yourName} placeholder="Sam">
+              <p class="hint is-error" e:for={msg of errors.yourName ?? []}>{msg}</p>
+            </div>
+
+            <div class="field is-full">
+              <button type="submit" class="is-primary">Create room</button>
+              <p class="hint">You'll facilitate. Anyone with the link joins with just a name.</p>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" e:if={demo}>
+          <div class="card-head"><h2>Demo room</h2></div>
+          <div class="card-body">
+            <div class="home-room row">
+              <div class="stack is-xs">
+                <a href={`/r/${demo!.code}`}>{demo!.name}</a>
+                <span class="home-room-meta">{demo!.people} people at the table, with the sprint under way</span>
+              </div>
+              <a class="button is-sm" href={`/r/${demo!.code}`}>Open</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" e:if={myRooms.length > 0}>
+          <div class="card-head"><h2>Your rooms</h2></div>
+          <ul class="card-body home-rooms">
+            <li class="home-room row" e:for={room of myRooms}>
+              <div class="stack is-xs">
+                <a href={`/r/${room.code}`}>{room.name}</a>
+                <span class="home-room-meta">{room.people} {room.people === 1 ? "person" : "people"}</span>
+              </div>
+              <span class="pill is-accent" e:if={room.facilitating}>Facilitator</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </Layout>
+  </body>
+</html>

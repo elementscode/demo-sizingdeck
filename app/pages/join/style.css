@@ -1,0 +1,20 @@
+@import "#app/shared/styles/page.css";
+
+.join-card {
+  max-width: var(--container-md);
+  margin-inline: auto;
+}
+
+.join-card h1 {
+  margin: 0;
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-tight);
+}
+
+.join-meta {
+  color: var(--ink-soft);
+}
+
+.join-faces {
+  gap: var(--space-1);
+}
