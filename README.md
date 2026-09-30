@@ -1,12 +1,12 @@
-![Sizingdeck, a planning poker app built with Elements: the Checkout Squad room just after a reveal, with six named cards face up, a 5.7 average, the spread from 3 to 8 and a bar per card.](POSTER_URL)
+![Sizingdeck, a planning poker app built with Elements: the Checkout Squad room just after a reveal, with six named cards face up, a 5.7 average, the spread from 3 to 8 and a bar per card.](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509/poster?v=dc2b6e719e0f)
 
 # Sizingdeck
 
 > A demo app built with [Elements](https://elements.dev).
 
-Join a room by link with just a name, vote face down while everyone sees who has voted, reveal with the average and spread, and export estimated stories as CSV.
+Rooms joined by link with a name, face-down votes, a reveal with the average and spread, and a CSV of estimated stories.
 
-**Demo:** [Sizingdeck](TBD)
+**Demo:** [Sizingdeck](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509)
 
 ## Agent specs
 
