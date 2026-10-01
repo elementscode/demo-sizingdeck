@@ -29,12 +29,12 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 
 ### What Elements gave the app
 
-- **A live table.** `rooms`, `participants`, `stories` and `votes` are LiveTables in `app/shared/services/poker.ts`, each partitioned by room. When someone joins, votes or the facilitator moves to the next story, every open copy of the room updates.
-- **Face-down cards.** The `votes` select returns a card only after it is revealed, so everyone sees who has voted while the cards stay face down. `reveal` in `app/pages/room/services.ts` turns the cards over, and `summarize` in `app/shared/deck.ts` works out the average and the spread.
-- **Join with a name.** `joinRoom` takes just a name, creates a user and signs them in with a session, so a teammate is in the room a moment after opening the link.
-- **Facilitator controls as function calls.** The room calls `@rpc` functions such as `addStory`, `castVote`, `revote` and `saveEstimate` straight from the template. `requireParticipant` and `requireFacilitator` check each caller's seat, and `claimFacilitator` lets another participant take over the role.
-- **Estimates as a download.** `/r/:code/estimates.csv` in `app/routes/estimates.ts` exports each estimated story with its estimate, average and vote count, and quotes any cell a spreadsheet would read as a formula.
-- **Data from SQL files.** Two migrations define the rooms and seed a demo room with five people and seven stories, four already estimated.
+- **A live table.** Rooms, participants, stories and votes are LiveTables, one view per room. When someone joins, votes or the facilitator moves to the next story, every open copy of the room updates.
+- **Face-down cards.** A card reaches the browser only after the reveal, so everyone sees who has voted while the cards stay face down. The reveal shows the average and the spread.
+- **Join with a name.** A teammate opens the link, types a name and is signed in with a session, in the room a moment later.
+- **Facilitator controls as function calls.** Adding stories, voting, revoting and saving an estimate call server functions straight from the page with `@rpc`. Each call checks the caller's seat, and another participant can take over as facilitator.
+- **Estimates as a download.** The room exports each estimated story with its estimate, average and vote count as a CSV that opens cleanly in a spreadsheet.
+- **Data from SQL files.** Migrations define the rooms and seed a demo room with five people and seven stories, four already estimated.
 
 ### What the project server gave the agent
 
@@ -43,8 +43,6 @@ The project server runs alongside the agent and answers as soon as a file is sav
 ### What shipped
 
 The app type-checks with zero errors and all 19 tests pass. Every page works on desktop and phone.
-
-Start in `app/pages/room/services.ts`.
 
 ## Seed data
 
