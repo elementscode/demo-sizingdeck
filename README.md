@@ -30,10 +30,15 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 ### What Elements gave the app
 
 - **A live table.** Rooms, participants, stories and votes are LiveTables, one view per room. When someone joins, votes or the facilitator moves to the next story, every open copy of the room updates.
+
 - **Face-down cards.** A card reaches the browser only after the reveal, so everyone sees who has voted while the cards stay face down. The reveal shows the average and the spread.
+
 - **Join with a name.** A teammate opens the link, types a name and is signed in with a session, in the room a moment later.
+
 - **Facilitator controls as function calls.** Adding stories, voting, revoting and saving an estimate call server functions straight from the page with `@rpc`. Each call checks the caller's seat, and another participant can take over as facilitator.
+
 - **Estimates as a download.** The room exports each estimated story with its estimate, average and vote count as a CSV that opens cleanly in a spreadsheet.
+
 - **Data from SQL files.** Migrations define the rooms and seed a demo room with five people and seven stories, four already estimated.
 
 ### What the project server gave the agent
