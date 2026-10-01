@@ -36,9 +36,13 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 - **Estimates as a download.** `/r/:code/estimates.csv` in `app/routes/estimates.ts` exports each estimated story with its estimate, average and vote count, and quotes any cell a spreadsheet would read as a formula.
 - **Data from SQL files.** Two migrations define the rooms and seed a demo room with five people and seven stories, four already estimated.
 
-### What the agent got from the tooling
+### What the project server gave the agent
 
-The agent ran 23 builds in 18 minutes, checking its work after each edit and moving straight on. Along the way the build caught errors such as async callbacks in a test helper that did not await them, with a message that showed the corrected signature, and class bindings that could produce a non-class value. The agent read 37 manual pages as it reached each part, from `recipes/team-partitioned-table` and `realtime` to `recipes/form-validation`, then wrote 19 tests and checked its pages at phone width in a real browser.
+The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
+
+### What shipped
+
+The app type-checks with zero errors and all 19 tests pass. Every page was checked on desktop and phone before publishing. The repo was installed fresh from GitHub and run before the demo went live.
 
 Start in `app/pages/room/services.ts`.
 
