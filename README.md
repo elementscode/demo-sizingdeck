@@ -38,7 +38,7 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 
 ### What the agent got from the tooling
 
-The agent ran 23 builds in 18 minutes. By the build's own timer, the median build finished in 11 milliseconds, so it checked its work after each edit and kept going. Along the way the build caught errors such as async callbacks in a test helper that did not await them, with a message that showed the corrected signature, and class bindings that could produce a non-class value. The agent read 37 manual pages as it reached each part, from `recipes/team-partitioned-table` and `realtime` to `recipes/form-validation`, then wrote 19 tests and checked its pages at phone width in a real browser.
+The agent ran 23 builds in 18 minutes, checking its work after each edit and moving straight on. Along the way the build caught errors such as async callbacks in a test helper that did not await them, with a message that showed the corrected signature, and class bindings that could produce a non-class value. The agent read 37 manual pages as it reached each part, from `recipes/team-partitioned-table` and `realtime` to `recipes/form-validation`, then wrote 19 tests and checked its pages at phone width in a real browser.
 
 Start in `app/pages/room/services.ts`.
 
