@@ -30,7 +30,7 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 ### What Elements gave the app
 
 - **A live table.** `rooms`, `participants`, `stories` and `votes` are LiveTables in `app/shared/services/poker.ts`, each partitioned by room. When someone joins, votes or the facilitator moves to the next story, every open copy of the room updates.
-- **Face-down cards.** The `votes` select returns a card only after it is revealed, so a browser sees that someone voted but never what they picked. `reveal` in `app/pages/room/services.ts` turns the cards over, and `summarize` in `app/shared/deck.ts` works out the average and the spread.
+- **Face-down cards.** The `votes` select returns a card only after it is revealed, so everyone sees who has voted while the cards stay face down. `reveal` in `app/pages/room/services.ts` turns the cards over, and `summarize` in `app/shared/deck.ts` works out the average and the spread.
 - **Join with a name.** `joinRoom` takes just a name, creates a user and signs them in with a session, so a teammate is in the room a moment after opening the link.
 - **Facilitator controls as function calls.** The room calls `@rpc` functions such as `addStory`, `castVote`, `revote` and `saveEstimate` straight from the template. `requireParticipant` and `requireFacilitator` check each caller's seat, and `claimFacilitator` lets another participant take over the role.
 - **Estimates as a download.** `/r/:code/estimates.csv` in `app/routes/estimates.ts` exports each estimated story with its estimate, average and vote count, and quotes any cell a spreadsheet would read as a formula.
