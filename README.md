@@ -1,30 +1,16 @@
-![Sizingdeck, a planning poker app built with Elements: the Checkout Squad room just after a reveal, with six named cards face up, a 5.7 average, the spread from 3 to 8 and a bar per card.](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509/poster?v=7b0f8e9612e6)
+![Planning poker with live reveals, built by Claude Code on Elements: the Checkout Squad room just after a reveal, with six named cards face up, a 5.7 average, the spread from 3 to 8 and a bar per card.](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509/poster?v=7b0f8e9612e6)
 
-# Sizingdeck
+# Planning poker with live reveals, built by Claude Code on Elements
 
-> A demo app built with [Elements](https://elements.dev).
+> Sizingdeck is a full-stack app built with Claude Code on Elements.
 
 Rooms joined by link with a name, face-down votes, a reveal with the average and spread, and a CSV of estimated stories.
 
-**Demo:** [Sizingdeck](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509)
-
-## Agent specs
-
-- **Agent:** Claude Code, Opus 5.5 Medium
-- **Time:** 18 min
-- **Cost:** $5.08 at API rates, September 2026
-
-## Get started
-
-```bash
-elements create sizingdeck -scaffold=elementscode/demo-sizingdeck
-```
+[Run this app on your machine](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
 
 ## How it's built
 
 Sizingdeck needed rooms anyone can join from a link, cards that stay face down until the reveal, a table everyone sees change as people vote and a CSV of the results. Each of those is a part of Elements, so the agent spent its 18 minutes on the game itself.
-
-### What Elements gave the app
 
 - **A live table.** Rooms, participants, stories and votes are LiveTables, one view per room. When someone joins, votes or the facilitator moves to the next story, every open copy of the room updates.
 
@@ -38,28 +24,6 @@ Sizingdeck needed rooms anyone can join from a link, cards that stay face down u
 
 - **Data from SQL files.** Migrations define the rooms and seed a demo room with five people and seven stories, four already estimated.
 
-### What the project server gave the agent
+## Why Elements
 
-The project server runs alongside the agent and answers as soon as a file is saved: it type-checks the templates, TypeScript and SQL, applies migrations and reruns the tests, so every question came back right away and the agent kept building.
-
-### What shipped
-
-The app type-checks with zero errors and all 19 tests pass. Every page works on desktop and phone.
-
-## Seed data
-
-There are no accounts: you join a room by typing a name. The demo seed
-creates one room, **Checkout Squad · Sprint 42** at `/r/sprint42`, linked from
-the home page. It has five people at the table (Priya Raman, Marcus Chen,
-Sofia Alvarez, Dev Okafor and Hana Kim), four stories already estimated, one
-story mid-vote with all five cards face down, and two stories queued.
-
-Join with any name and your seat is the one still to vote. Click **Take over**
-to become the facilitator, then reveal the cards, settle the estimate and
-export the estimated stories as CSV.
-
-**Demo:** [Sizingdeck](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+Elements is an integrated full-stack app framework and a project server. The project server checks the agent's work as it builds: it type-checks the server and browser code, analyzes the program, applies migrations and runs the tests, then reports the results to the agent. A security mistake, such as calling a server-only function from the browser, is a compile error. The agent reads the report and fixes its own mistakes before it tells you a feature is done. The same checks run on every feature you ask for next.
