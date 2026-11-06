@@ -14,7 +14,3 @@
 .join-meta {
   color: var(--ink-soft);
 }
-
-.join-faces {
-  gap: var(--space-1);
-}

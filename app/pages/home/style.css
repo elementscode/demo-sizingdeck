@@ -53,26 +53,6 @@
   border-color: var(--accent);
 }
 
-.home-rooms a {
-  font-weight: var(--weight-medium);
-}
-
-.home-room {
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding-block: var(--space-3);
-  border-bottom: 1px solid var(--rule-soft);
-}
-
-.home-room:last-child {
-  border-bottom: 0;
-}
-
-.home-room-meta {
-  font-size: var(--text-sm);
-  color: var(--ink-soft);
-}
-
 @media (max-width: 45rem) {
   .home-fan {
     display: none;

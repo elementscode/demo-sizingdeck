@@ -3,6 +3,10 @@ import { FieldErrors, redirect, session, sql, tx, ValidationError } from "@eleme
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { Layout } from "#app/shared/templates/layout";
 import { findRoomByCode } from "#app/shared/services/poker";
+import { Button } from "@elements/ui/button";
+import { Card, CardContent } from "@elements/ui/card";
+import { Field } from "@elements/ui/field";
+import { Input } from "@elements/ui/input";
 
 interface JoinForm {
   name: string;
@@ -65,25 +69,25 @@ function onJoin(code: string, form: JoinForm): FieldErrors<JoinForm> {
   </head>
   <body>
     <Layout>
-      <div class="card join-card">
-        <form class="card-body stack is-lg" onsubmit={() => errors = onJoin(room.code, form)}>
-          <div class="stack is-sm">
-            <p class="eyebrow">You're invited to estimate</p>
-            <h1>{room.name}</h1>
-            <p class="join-meta" e:if={people.length > 0}>
-              {people.length === 1 ? people[0] + " is" : `${people.slice(0, 3).join(", ")}${people.length > 3 ? ` and ${people.length - 3} more` : ""} are`} at the table.
-            </p>
-          </div>
-
-          <div class="field">
-            <label for="join-name">Your name</label>
-            <input id="join-name" class={errors.name?.length ? "is-error" : undefined} value={form.name} placeholder="Sam" focus={true}>
-            <p class="hint is-error" e:for={msg of errors.name ?? []}>{msg}</p>
-          </div>
-
-          <button type="submit" class="is-primary is-block">Join the room</button>
-        </form>
-      </div>
+      <Card class="join-card">
+        <CardContent>
+          <form class="stack is-lg" onsubmit={() => errors = onJoin(room.code, form)}>
+            <div class="stack is-sm">
+              <p class="eyebrow">You're invited to estimate</p>
+              <h1>{room.name}</h1>
+              <p class="join-meta" e:if={people.length > 0}>
+                {people.length === 1 ? people[0] + " is" : `${people.slice(0, 3).join(", ")}${people.length > 3 ? ` and ${people.length - 3} more` : ""} are`} at the table.
+              </p>
+            </div>
+  
+            <Field label="Your name" errors={errors.name ?? []}>
+              <Input value={form.name} placeholder="Sam" attrs={{ autofocus: true }} />
+            </Field>
+  
+            <Button type="submit" variant="primary" block>Join the room</Button>
+          </form>
+        </CardContent>
+      </Card>
     </Layout>
   </body>
 </html>
