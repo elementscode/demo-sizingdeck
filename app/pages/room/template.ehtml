@@ -416,22 +416,21 @@ async function onCopy(url: string, state: { copied: boolean }) {
           <strong>{playersOf(cast, people, summary.low!)}</strong> played {summary.low} and <strong>{playersOf(cast, people, summary.high!)}</strong> played {summary.high}. Hear them out before settling.
         </p>
 
-        <div class="results-chart" style={{ "--rows": String(summary.counts.length) }}>
-          <BarChart
-            data={summary.counts.map((c) => ({ card: cardLabel(c.card), count: c.count }))}
-            config={PLAYED}
-            x="card"
-            orientation="horizontal"
-            labels={{ position: "right" }}
-            valueAxis={false}
-            grid={false}
-            tooltip={false}
-            background
-            barSize={10}
-            label="Cards played"
-            class="results-bars"
-          />
-        </div>
+        <BarChart
+          data={summary.counts.map((c) => ({ card: cardLabel(c.card), count: c.count }))}
+          config={PLAYED}
+          x="card"
+          orientation="horizontal"
+          labels={{ position: "right" }}
+          valueAxis={false}
+          grid={false}
+          tooltip={false}
+          background
+          barSize={10}
+          label="Cards played"
+          class="results-bars"
+          attrs={{ style: `--rows: ${summary.counts.length}` }}
+        />
       </div>
     </div>
 
