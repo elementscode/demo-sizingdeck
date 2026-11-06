@@ -1,5 +1,19 @@
 import "./style.css";
 import { LiveView } from "@elements/app";
+import { Alert, AlertAction } from "@elements/ui/alert";
+import { Badge } from "@elements/ui/badge";
+import { Button } from "@elements/ui/button";
+import { ButtonGroup } from "@elements/ui/button-group";
+import { Card, CardContent } from "@elements/ui/card";
+import { BarChart } from "@elements/ui/chart-bar";
+import type { ChartConfig } from "@elements/ui/chart";
+import { Empty } from "@elements/ui/empty";
+import { Field, FieldLegend, FieldSet } from "@elements/ui/field";
+import { Icon } from "@elements/ui/icon";
+import { Input } from "@elements/ui/input";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemGroup, ItemMedia, ItemTitle } from "@elements/ui/item";
+import { Progress } from "@elements/ui/progress";
+import { ToggleGroup, ToggleGroupItem } from "@elements/ui/toggle-group";
 import favicon from "#app/shared/assets/favicons/favicon.svg";
 import { Layout } from "#app/shared/templates/layout";
 import { Participant, Room, Story, Vote } from "#app/shared/services/poker";
@@ -22,6 +36,10 @@ interface Mine {
   round: number;
   card: string;
 }
+
+const PLAYED: ChartConfig = {
+  count: { label: "Cards", color: "var(--accent)" },
+};
 
 interface Notice {
   text: string;
@@ -197,10 +215,9 @@ async function onCopy(url: string, state: { copied: boolean }) {
       <div class="stack is-xl">
         <RoomHead room={roomRows.at(0)!} {people} {me} {shareUrl} {notice} />
 
-        <div class="callout is-danger room-notice row" e:if={notice.text} role="alert">
-          <span>{notice.text}</span>
-          <button class="is-ghost is-sm" onclick={() => notice.text = ""}>Dismiss</button>
-        </div>
+        <Alert e:if={notice.text} variant="danger" description={notice.text}>
+          <AlertAction><Button variant="ghost" size="sm" onclick={() => notice.text = ""}>Dismiss</Button></AlertAction>
+        </Alert>
 
         <div class="room-grid">
           <div class="stack is-lg">
@@ -245,14 +262,14 @@ async function onCopy(url: string, state: { copied: boolean }) {
   <div class="room-head stack">
     <h1>{room.name}</h1>
     <div class="room-meta cluster">
-      <div class="room-share row">
-        <input readonly value={shareUrl} aria-label="Room link" onfocus={(e: FocusEvent) => (e.target as HTMLInputElement).select()}>
-        <button class="is-sm" onclick={() => onCopy(shareUrl, share)}>{share.copied ? "Copied" : "Copy link"}</button>
-      </div>
-      <span e:if={room.facilitatorId === me} class="pill is-accent">You're facilitating</span>
+      <ButtonGroup class="room-share" label="Room link">
+        <Input readonly value={shareUrl} size="sm" attrs={{ "aria-label": "Room link" }} onfocus={(e: FocusEvent) => (e.target as HTMLInputElement).select()} />
+        <Button size="sm" onclick={() => onCopy(shareUrl, share)}>{share.copied ? "Copied" : "Copy link"}</Button>
+      </ButtonGroup>
+      <Badge e:if={room.facilitatorId === me} variant="accent">You're facilitating</Badge>
       <span e:else class="cluster is-sm">
         <span>Facilitator: <strong>{nameOf(people, room.facilitatorId)}</strong></span>
-        <button class="is-ghost is-sm" onclick={() => onClaim(room.id, notice)}>Take over</button>
+        <Button variant="link" size="sm" onclick={() => onClaim(room.id, notice)}>Take over</Button>
       </span>
       <span>{people.length} at the table</span>
     </div>
@@ -270,8 +287,8 @@ async function onCopy(url: string, state: { copied: boolean }) {
   notice: Notice,
   private facilitating: boolean = room.facilitatorId === me,
 )>
-  <div class="card">
-    <div class="card-body stack is-lg" e:if={story}>
+  <Card>
+    <CardContent class="stack is-lg" e:if={story}>
       <div class="stage-title row">
         <div class="stack is-xs">
           <p class="eyebrow">{story!.status === "revealed" ? "Cards are up" : "Now estimating"}</p>
@@ -279,37 +296,41 @@ async function onCopy(url: string, state: { copied: boolean }) {
           <a e:if={story!.url} class="stage-link" href={story!.url} target="_blank" rel="noopener">{linkLabel(story!.url)}</a>
         </div>
         <div class="stage-actions row" e:if={facilitating}>
-          <button class="is-ghost" e:if={cast.length > 0 || story!.status === "revealed"} onclick={() => onRevote(room.id, notice)}>
+          <Button e:if={cast.length > 0 || story!.status === "revealed"} onclick={() => onRevote(room.id, notice)}>
             {story!.status === "revealed" ? "Vote again" : "Clear cards"}
-          </button>
-          <button class="is-primary" e:if={story!.status === "voting"} disabled={cast.length === 0} onclick={() => onReveal(room.id, notice)}>
+          </Button>
+          <Button variant="primary" e:if={story!.status === "voting"} disabled={cast.length === 0} onclick={() => onReveal(room.id, notice)}>
             Reveal cards
-          </button>
+          </Button>
         </div>
       </div>
 
       <TableSeats {story} {people} {cast} {room} {me} />
 
       <Results e:if={story!.status === "revealed"} {room} story={story!} {cast} {facilitating} {people} {notice} />
-    </div>
+    </CardContent>
 
-    <div class="card-body stage-empty" e:elseif={stories.some((s) => s.status === "pending")}>
-      <strong>Pick the next story</strong>
-      <span e:if={facilitating}>Choose one from Up next to start the vote.</span>
-      <span e:else>Waiting for {nameOf(people, room.facilitatorId)} to pick the next story.</span>
-    </div>
+    <CardContent e:elseif={stories.some((s) => s.status === "pending")}>
+      <Empty
+        title="Pick the next story"
+        description={facilitating ? "Choose one from Up next to start the vote." : `Waiting for ${nameOf(people, room.facilitatorId)} to pick the next story.`}
+      />
+    </CardContent>
 
-    <div class="card-body stage-empty" e:elseif={stories.length > 0}>
-      <strong>Everything's sized</strong>
-      <span>{stories.length} {stories.length === 1 ? "story" : "stories"} estimated. Add more to keep going, or export the list.</span>
-    </div>
+    <CardContent e:elseif={stories.length > 0}>
+      <Empty
+        title="Everything's sized"
+        description={`${stories.length} ${stories.length === 1 ? "story" : "stories"} estimated. Add more to keep going, or export the list.`}
+      />
+    </CardContent>
 
-    <div class="card-body stage-empty" e:else>
-      <strong>No stories yet</strong>
-      <span e:if={facilitating}>Add the first story on the right and voting starts right away.</span>
-      <span e:else>Waiting for {nameOf(people, room.facilitatorId)} to add a story.</span>
-    </div>
-  </div>
+    <CardContent e:else>
+      <Empty
+        title="No stories yet"
+        description={facilitating ? "Add the first story on the right and voting starts right away." : `Waiting for ${nameOf(people, room.facilitatorId)} to add a story.`}
+      />
+    </CardContent>
+  </Card>
 
   <Hand e:if={story} room={room} story={story!} {mine} {notice} />
 </Stage>
@@ -329,7 +350,7 @@ async function onCopy(url: string, state: { copied: boolean }) {
     </ul>
 
     <div class="table-status row" e:if={story?.status === "voting"}>
-      <progress max={people.length} value={cast.length}></progress>
+      <Progress value={cast.length} max={people.length} size="sm" getValueLabel={(v, max) => `${v} of ${max} voted`} attrs={{ "aria-label": "Votes cast" }} />
       <span>{cast.length} of {people.length} voted</span>
     </div>
   </div>
@@ -383,10 +404,9 @@ async function onCopy(url: string, state: { copied: boolean }) {
 
       <div class="stack is-sm">
         <div class="cluster is-sm">
-          <span class={["pill", summary.consensus ? "is-success" : summary.steps >= 3 ? "is-warning" : "is-info"]}>
-            <span class="pill-dot"></span>
+          <Badge variant={summary.consensus ? "success" : summary.steps >= 3 ? "warning" : "info"} dot>
             {summary.numericCount > 0 ? spreadLabel(summary) : "No point cards"}
-          </span>
+          </Badge>
           <span class="hand-hint" e:if={summary.numericCount > 0 && !summary.consensus}>
             Spread {summary.low} to {summary.high}, {summary.steps} {summary.steps === 1 ? "step" : "steps"} apart
           </span>
@@ -396,33 +416,43 @@ async function onCopy(url: string, state: { copied: boolean }) {
           <strong>{playersOf(cast, people, summary.low!)}</strong> played {summary.low} and <strong>{playersOf(cast, people, summary.high!)}</strong> played {summary.high}. Hear them out before settling.
         </p>
 
-        <div class="bars">
-          <div class="bar" e:for={c of summary.counts} e:key={(c) => c.card}>
-            <span class="bar-card">{cardLabel(c.card)}</span>
-            <span class="bar-track"><span class="bar-fill" style={{ width: `${(c.count / Math.max(...summary.counts.map((x) => x.count))) * 100}%` }}></span></span>
-            <span class="bar-count">{c.count}</span>
-          </div>
+        <div class="results-chart" style={{ "--rows": String(summary.counts.length) }}>
+          <BarChart
+            data={summary.counts.map((c) => ({ card: cardLabel(c.card), count: c.count }))}
+            config={PLAYED}
+            x="card"
+            orientation="horizontal"
+            labels={{ position: "right" }}
+            valueAxis={false}
+            grid={false}
+            tooltip={false}
+            background
+            barSize={10}
+            label="Cards played"
+            class="results-bars"
+          />
         </div>
       </div>
     </div>
 
-    <div class="settle stack" e:if={facilitating}>
-      <label>Final estimate</label>
-      <div class="settle-picks cluster">
-        <button
-          e:for={p of POINTS}
-          e:key={(p) => p}
-          class={["is-sm", chosen(pick, story, summary) === p && "is-primary"]}
-          aria-pressed={chosen(pick, story, summary) === p ? "true" : "false"}
-          onclick={() => pick = { key: pickKey(story), value: p }}
-        >{p}</button>
-      </div>
+    <FieldSet e:if={facilitating} class="settle">
+      <FieldLegend variant="label">Final estimate</FieldLegend>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        label="Final estimate"
+        value={chosen(pick, story, summary)}
+        onValueChange={(v, details) => v ? pick = { key: pickKey(story), value: v } : details.cancel()}
+      >
+        <ToggleGroupItem e:for={p of POINTS} e:key={(p) => p} value={p}>{p}</ToggleGroupItem>
+      </ToggleGroup>
       <div class="row">
-        <button class="is-primary" disabled={chosen(pick, story, summary) === ""} onclick={() => onSave(room.id, chosen(pick, story, summary), notice)}>
+        <Button variant="primary" disabled={chosen(pick, story, summary) === ""} onclick={() => onSave(room.id, chosen(pick, story, summary), notice)}>
           Save {chosen(pick, story, summary) ? `${chosen(pick, story, summary)} points` : "estimate"}
-        </button>
+        </Button>
       </div>
-    </div>
+    </FieldSet>
 
     <p class="hand-hint" e:else>
       {nameOf(people, room.facilitatorId)} will settle the final estimate{summary.suggestion ? `; the cards point to ${summary.suggestion}` : ""}.
@@ -436,8 +466,8 @@ async function onCopy(url: string, state: { copied: boolean }) {
   mine: Mine,
   notice: Notice,
 )>
-  <div class="card">
-    <div class="card-body stack">
+  <Card>
+    <CardContent class="stack">
       <div class="hand" role="group" aria-label="Your cards">
         <button
           e:for={card of DECK}
@@ -452,8 +482,8 @@ async function onCopy(url: string, state: { copied: boolean }) {
       <p class="hand-hint" e:if={story.status !== "voting"}>Cards are up. Wait for the final estimate or a new round.</p>
       <p class="hand-hint" e:elseif={myCard(mine, story)}>Your card is down. Nobody sees it until the reveal; pick again to change it.</p>
       <p class="hand-hint" e:else>Pick a card. It stays face down until the facilitator reveals.</p>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </Hand>
 
 <Queue (
@@ -465,63 +495,61 @@ async function onCopy(url: string, state: { copied: boolean }) {
   private form: StoryForm = { title: "", url: "" },
   private errors: StoryErrors = {},
 )>
-  <div class="card">
-    <div class="card-head"><h2>Up next</h2></div>
-    <div class="card-body stack">
-      <ul class="side-list" e:if={pending.length > 0}>
-        <li class="queue-item row" e:for={s of pending}>
-          <div class="item-text stack">
-            <span class="item-title">{s.title}</span>
-            <a e:if={s.url} class="item-sub" href={s.url} target="_blank" rel="noopener">{linkLabel(s.url)}</a>
-          </div>
-          <div class="item-actions row" e:if={facilitating}>
-            <button class="is-sm" onclick={() => onStart(room.id, s.id, notice)}>Estimate</button>
-            <button class="is-ghost is-sm" aria-label={`Remove ${s.title}`} onclick={() => onRemove(room.id, s.id, notice)}>✕</button>
-          </div>
-        </li>
-      </ul>
-      <p class="side-empty" e:else>{facilitating ? "Nothing queued. Add a story below." : "Nothing queued yet."}</p>
+  <Card title="Up next" level={2}>
+    <CardContent class="stack">
+      <ItemGroup e:if={pending.length > 0} label="Up next">
+        <Item size="sm" e:for={s of pending}>
+          <ItemContent>
+            <ItemTitle>{s.title}</ItemTitle>
+          </ItemContent>
+          <ItemActions e:if={facilitating}>
+            <Button size="sm" onclick={() => onStart(room.id, s.id, notice)}>Estimate</Button>
+            <Button variant="ghost" size="sm" icon label={`Remove ${s.title}`} onclick={() => onRemove(room.id, s.id, notice)}><Icon name="x" /></Button>
+          </ItemActions>
+          <ItemFooter e:if={s.url}>
+            <a class="story-link" href={s.url} target="_blank" rel="noopener">{linkLabel(s.url)}</a>
+          </ItemFooter>
+        </Item>
+      </ItemGroup>
+      <Empty e:else description={facilitating ? "Nothing queued. Add a story below." : "Nothing queued yet."} />
 
       <form class="stack is-sm" e:if={facilitating} onsubmit={() => errors = onAddStory(room.id, form, notice)}>
-        <div class="field">
-          <label for="story-title">Story</label>
-          <input id="story-title" class={errors.title?.length ? "is-error" : undefined} value={form.title} placeholder="Export invoices as PDF">
-          <p class="hint is-error" e:for={msg of errors.title ?? []}>{msg}</p>
-        </div>
-        <div class="field">
-          <label for="story-url">Link</label>
-          <input id="story-url" class={errors.url?.length ? "is-error" : undefined} value={form.url} placeholder="https://tracker.example.com/PAY-204">
-          <p class="hint is-error" e:for={msg of errors.url ?? []}>{msg}</p>
-        </div>
-        <button type="submit" class="is-block">Add story</button>
+        <Field label="Story" errors={errors.title ?? []}>
+          <Input value={form.title} placeholder="Export invoices as PDF" />
+        </Field>
+        <Field label="Link" errors={errors.url ?? []}>
+          <Input value={form.url} placeholder="https://tracker.example.com/PAY-204" />
+        </Field>
+        <Button type="submit" block>Add story</Button>
       </form>
-      <p class="side-empty" e:else>The facilitator adds the stories.</p>
-    </div>
-  </div>
+      <Empty e:else description="The facilitator adds the stories." />
+    </CardContent>
+  </Card>
 </Queue>
 
 <Estimated (room: Room, done: Story[])>
-  <div class="card">
-    <div class="card-head"><h2>Estimated</h2></div>
-    <div class="card-body stack">
-      <ul class="side-list" e:if={done.length > 0}>
-        <li class="done-item row" e:for={s of done}>
-          <span class="done-chip">{s.estimate}</span>
-          <div class="item-text stack">
-            <a e:if={s.url} class="item-title" href={s.url} target="_blank" rel="noopener">{s.title}</a>
-            <span e:else class="item-title">{s.title}</span>
-            <span class="item-sub">avg {s.average ?? "–"} · {s.voteCount} {s.voteCount === 1 ? "vote" : "votes"}</span>
-          </div>
-        </li>
-      </ul>
-      <p class="side-empty" e:else>Settled stories collect here.</p>
+  <Card title="Estimated" level={2}>
+    <CardContent class="stack">
+      <ItemGroup e:if={done.length > 0} label="Estimated">
+        <Item size="sm" e:for={s of done}>
+          <ItemMedia><span class="done-chip">{s.estimate}</span></ItemMedia>
+          <ItemContent>
+            <ItemTitle>
+              <a e:if={s.url} href={s.url} target="_blank" rel="noopener">{s.title}</a>
+              <span e:else>{s.title}</span>
+            </ItemTitle>
+            <ItemDescription>avg {s.average ?? "–"} · {s.voteCount} {s.voteCount === 1 ? "vote" : "votes"}</ItemDescription>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+      <Empty e:else description="Settled stories collect here." />
 
       <div class="done-total row" e:if={done.length > 0}>
         <span><strong>{done.reduce((sum, s) => sum + Number(s.estimate ?? 0), 0)}</strong> points across {done.length} {done.length === 1 ? "story" : "stories"}</span>
-        <a class="button is-sm" href={`/r/${room.code}/estimates.csv`} download>Export CSV</a>
+        <Button size="sm" href={`/r/${room.code}/estimates.csv`} attrs={{ download: true }}>Export CSV</Button>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 </Estimated>
 
 function isOutlier(vote: Vote, cast: Vote[]): boolean {

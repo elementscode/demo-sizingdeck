@@ -21,28 +21,11 @@
   min-width: 0;
 }
 
-.room-share button {
-  flex: none;
-  white-space: nowrap;
-}
-
-.room-share input {
-  width: 19rem;
-  max-width: 100%;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-}
-
 .room-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;
   gap: var(--space-8);
   align-items: start;
-}
-
-.room-notice {
-  justify-content: space-between;
-  gap: var(--space-3);
 }
 
 .stage-title {
@@ -67,19 +50,6 @@
 .stage-actions {
   flex: none;
   gap: var(--space-2);
-}
-
-.stage-empty {
-  padding-block: var(--space-6);
-  text-align: center;
-  color: var(--ink-soft);
-}
-
-.stage-empty strong {
-  display: block;
-  margin-bottom: var(--space-1);
-  font-size: var(--text-lg);
-  color: var(--ink);
 }
 
 /* The table: one seat per person, their card above their name. */
@@ -211,10 +181,6 @@
   color: var(--ink-soft);
 }
 
-.table-status progress {
-  width: 8rem;
-}
-
 /* Results after the flip. */
 
 .results {
@@ -246,50 +212,8 @@
   color: var(--ink-soft);
 }
 
-.bars {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.bar {
-  display: grid;
-  grid-template-columns: 2.25rem minmax(0, 1fr) 1.5rem;
-  gap: var(--space-3);
-  align-items: center;
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-}
-
-.bar-card {
-  font-weight: var(--weight-semibold);
-  text-align: right;
-}
-
-.bar-track {
-  height: 0.625rem;
-  border-radius: var(--radius-full);
-  background: var(--bg-muted);
-  overflow: hidden;
-}
-
-.bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  transition: width var(--duration-slow) var(--ease-out);
-}
-
-.bar-count {
-  color: var(--ink-soft);
-}
-
 .settle {
   gap: var(--space-3);
-}
-
-.settle label {
-  font-weight: var(--weight-medium);
 }
 
 .results-talk {
@@ -299,15 +223,6 @@
 
 .results-talk strong {
   color: var(--ink);
-}
-
-.settle-picks {
-  gap: var(--space-1-5);
-}
-
-.settle-picks button {
-  min-width: 2.5rem;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Your hand. */
@@ -372,68 +287,7 @@
 
 /* The side column. */
 
-.side-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.queue-item,
-.done-item {
-  gap: var(--space-3);
-  padding-block: var(--space-3);
-  border-bottom: 1px solid var(--rule-soft);
-}
-
-.queue-item:last-child,
-.done-item:last-child {
-  border-bottom: 0;
-}
-
-.queue-item {
-  justify-content: space-between;
-}
-
-/* The link gets the full row under the title and the buttons, so it isn't cut short. */
-.side-list .queue-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  row-gap: var(--space-0-5);
-}
-
-.queue-item .item-text {
-  display: contents;
-}
-
-.queue-item .item-title {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.queue-item .item-sub {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-
-.queue-item .item-actions {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.item-text {
-  min-width: 0;
-  flex: 1;
-  gap: var(--space-0-5);
-}
-
-.item-title {
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-snug);
-  overflow-wrap: anywhere;
-}
-
-.item-sub {
+.story-link {
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -442,11 +296,6 @@
   font-size: var(--text-xs);
   color: var(--ink-soft);
   font-family: var(--font-mono);
-}
-
-.item-actions {
-  flex: none;
-  gap: var(--space-1);
 }
 
 .done-chip {
@@ -473,11 +322,6 @@
 .done-total strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-}
-
-.side-empty {
-  font-size: var(--text-sm);
-  color: var(--ink-soft);
 }
 
 @media (max-width: 64rem) {
@@ -514,12 +358,6 @@
     flex-direction: column;
   }
 
-  .room-share input {
-    flex: 1;
-    width: auto;
-    min-width: 0;
-  }
-
   .room-share {
     width: 100%;
   }
@@ -527,12 +365,28 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pcard-inner,
-  .hand-card,
-  .bar-fill {
+  .hand-card {
     transition: none;
   }
 
   .pcard-back {
     animation: none;
   }
+}
+
+.room-share .input {
+  width: 19rem;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.table-status .progress {
+  width: 8rem;
+}
+
+.results-bars {
+  width: 100%;
+  height: calc(var(--rows, 1) * 1.875rem + 0.5rem);
+  aspect-ratio: auto;
 }
