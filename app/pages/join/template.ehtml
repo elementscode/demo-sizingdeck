@@ -79,11 +79,11 @@ function onJoin(code: string, form: JoinForm): FieldErrors<JoinForm> {
                 {people.length === 1 ? people[0] + " is" : `${people.slice(0, 3).join(", ")}${people.length > 3 ? ` and ${people.length - 3} more` : ""} are`} at the table.
               </p>
             </div>
-  
+
             <Field label="Your name" errors={errors.name ?? []}>
               <Input value={form.name} placeholder="Sam" attrs={{ autofocus: true }} />
             </Field>
-  
+
             <Button type="submit" variant="primary" block>Join the room</Button>
           </form>
         </CardContent>
