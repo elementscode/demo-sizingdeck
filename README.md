@@ -4,6 +4,8 @@
 
 > Sizingdeck is a full-stack app built with Claude Code on Elements.
 
+Sizingdeck uses the `coder` theme from @elements/ui.
+
 Rooms joined by link with a name, face-down votes, a reveal with the average and spread, and a CSV of estimated stories.
 
 [Run this app on your machine](https://elements.dev/demos/01a0f3db-f5e3-7370-a51d-a7bacb64c509). Use this demo as inspiration, or as the starting point for your own app. Your agent creates a new app with this one as the scaffold, and you prompt it to add whatever features you want.
